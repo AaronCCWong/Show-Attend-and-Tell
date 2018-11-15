@@ -1,0 +1,1 @@
+Training, validation and test images go in here
