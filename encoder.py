@@ -8,4 +8,7 @@ class Encoder(nn.Module):
         self.vgg = nn.Sequential(*list(self.vgg.features.children())[:-1])
 
     def forward(self, x):
-        return self.vgg(x)
+        x = self.vgg(x)
+        x = x.permute(0, 2, 3, 1)
+        x = x.view(x.size(0), -1, x.size(-1))
+        return x
