@@ -1,6 +1,7 @@
 import torch.nn as nn
 from torchvision.models import vgg19
 
+
 class Encoder(nn.Module):
     def __init__(self):
         super(Encoder, self).__init__()
