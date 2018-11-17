@@ -32,6 +32,7 @@ def main(args):
 
 
 def train(epoch, encoder, decoder, optimizer, loss, data_loader):
+    encoder.eval()
     decoder.train()
     for batch_idx, (img, captions) in enumerate(data_loader):
         img_features = encoder(img)
