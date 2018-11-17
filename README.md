@@ -12,5 +12,7 @@
 ## References
 
 [Paper](https://arxiv.org/pdf/1502.03044.pdf)
+
 [Theano Implementation](https://github.com/kelvinxu/arctic-captions)
+
 [Karpathy's Data splits](https://cs.stanford.edu/people/karpathy/deepimagesent/)

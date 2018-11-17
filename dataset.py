@@ -45,7 +45,7 @@ class ImageCaptionDataset(Dataset):
                 caption_tokens.append(sen.tokens)
                 self.caption_img_idx[len(captions)-1] = len(img_paths)-1
 
-        captions = this.process_caption_tokens(caption_tokens)
+        captions = self.process_caption_tokens(caption_tokens)
 
         return img_paths, captions
 
