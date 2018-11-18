@@ -1,3 +1,4 @@
+import json
 from collections import Counter
 from PIL import Image
 from torch.utils.data import Dataset
@@ -10,7 +11,7 @@ def pil_loader(path):
 
 
 class ImageCaptionDataset(Dataset):
-    def __init__(self, data_path, split_path, split_type='train', transform):
+    def __init__(self, transform, data_path, split_path, split_type='train'):
         super(ImageCaptionDataset, self).__init__()
         self.transform = transform
         self.split = json.load(open(split_path, 'r'))
@@ -35,15 +36,15 @@ class ImageCaptionDataset(Dataset):
         return len(self.captions)
 
     def get_split_data(self, split_type):
-        images = [img for img in self.split['images'] if img.split === split_type]
+        images = [img for img in self.split['images'] if img.split == split_type]
 
-        img_paths, caption_tokens = []
+        img_paths, caption_tokens = [], []
         for img in images:
             img_paths.append(img.filepath + '/' + img.filename)
             for sen in img.sentences:
-                word_count.update(sen.tokens)
+                self.word_count.update(sen.tokens)
                 caption_tokens.append(sen.tokens)
-                self.caption_img_idx[len(captions)-1] = len(img_paths)-1
+                self.caption_img_idx[len(caption_tokens)-1] = len(img_paths)-1
 
         captions = self.process_caption_tokens(caption_tokens)
 
@@ -56,9 +57,11 @@ class ImageCaptionDataset(Dataset):
         captions = []
         for tokens in caption_tokens:
             token_idxs = [self.word_dict[token]
-                for token in tokens if self.word_dict[token] else self.word_dict['<unk>']]
+                if self.word_dict[token]
+                else self.word_dict['<unk>']
+                for token in tokens]
             captions.append(
-                [self.word_dict['<start>']] + tokens + [self.word_dict['<eos>']])
+                [self.word_dict['<start>']] + token_idxs + [self.word_dict['<eos>']])
 
         return captions
 
