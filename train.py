@@ -1,10 +1,10 @@
-
 import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
+from torchvision import transforms
 
+from dataset import ImageCaptionDataset
 from decoder import Decoder
 from encoder import Encoder
 
@@ -14,7 +14,7 @@ def main(args):
     decoder = Decoder()
 
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-    loss = nn.NLLLoss()
+    loss = nn.CrossEntropyLoss()
 
     data_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -24,18 +24,19 @@ def main(args):
     ])
 
     train_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder('data/coco', transform=data_transforms),
+        ImageCaptionDataset(data_transforms, 'data/coco/imgs', 'data/coco/dataset.json'),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
-    for epoch in range(1, args.epoch + 1):
+    for epoch in range(1, args.epochs + 1):
         train(epoch, encoder, decoder, optimizer, loss, train_loader)
 
 
 def train(epoch, encoder, decoder, optimizer, loss, data_loader):
     encoder.eval()
     decoder.train()
-    for batch_idx, (img, captions) in enumerate(data_loader):
-        img_features = encoder(img)
+    for batch_idx, (imgs, captions) in enumerate(data_loader):
+        img_features = encoder(imgs)
+        decoder(img_features, captions)
 
 
 if __name__ == "__main__":
