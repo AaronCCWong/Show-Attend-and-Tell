@@ -13,8 +13,10 @@
 
 ## References
 
-[Paper](https://arxiv.org/pdf/1502.03044.pdf)
+[Show, Attend and Tell](https://arxiv.org/pdf/1502.03044.pdf)
 
 [Original Theano Implementation](https://github.com/kelvinxu/arctic-captions)
+
+[Neural Machine Translation By Jointly Learning to Align And Translate](https://arxiv.org/pdf/1409.0473.pdf)
 
 [Karpathy's Data splits](https://cs.stanford.edu/people/karpathy/deepimagesent/)
