@@ -11,10 +11,12 @@ from encoder import Encoder
 
 def main(args):
     encoder = Encoder()
+    encoder.cuda()
     decoder = Decoder()
+    decoder.cuda()
 
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-    loss = nn.CrossEntropyLoss()
+    cross_entropy_loss = nn.CrossEntropyLoss()
 
     data_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -28,15 +30,33 @@ def main(args):
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     for epoch in range(1, args.epochs + 1):
-        train(epoch, encoder, decoder, optimizer, loss, train_loader)
+        train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
+              train_loader, args.alpha_c, args.log_interval)
+        model_file = 'model/model_' + str(epoch) + '.pth'
+        torch.save(decoder.state_dict(), model_file)
+        print('Saved model to ' + model_file)
 
 
-def train(epoch, encoder, decoder, optimizer, loss, data_loader):
+def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, alpha_c, log_interval):
     encoder.eval()
     decoder.train()
     for batch_idx, (imgs, captions) in enumerate(data_loader):
         img_features = encoder(imgs)
-        decoder(img_features, captions)
+        optimizer.zero_grad()
+        preds, alphas = decoder(img_features, captions)
+        targets = captions[:, 1:]
+
+        att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
+
+        loss = cross_entropy_loss(preds, targets)
+        loss += att_regularization
+        loss.backward()
+        optimizer.step()
+
+        if batch_idx % log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(imgs), len(data_loader.dataset),
+                100. * batch_idx / len(data_loader), loss.item()))
 
 
 if __name__ == "__main__":
@@ -47,5 +67,9 @@ if __name__ == "__main__":
                         help='number of epochs to train for (default: 10)')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='learning rate of the decoder (default: 1e-3)')
+    parser.add_argument('--alpha-c', type=float, default=1, metavar='A',
+                        help='regularization constant (default: 1)')
+    parser.add_argument('--log-interval', type=int, default=100, metavar='L',
+                        help='number of batches to wait before logging training stats (default: 100)')
 
     main(parser.parse_args())

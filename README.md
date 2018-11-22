@@ -7,8 +7,8 @@
 - [x] Create dataset loader
 - [x] Write main function for training and validation
 - [x] Implement attention model
-- [ ] Implement decoder feed forward function
-- [ ] Write training function
+- [x] Implement decoder feed forward function
+- [x] Write training function
 - [ ] Write validation function
 
 ## References

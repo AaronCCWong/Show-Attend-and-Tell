@@ -59,7 +59,5 @@ class ImageCaptionDataset(Dataset):
                 if word_dict[token] else word_dict['<unk>'] for token in tokens]
             captions.append(
                 [word_dict['<start>']] + token_idxs + [word_dict['<eos>']])
-        print(len(word_dict))
+
         return captions
-
-
