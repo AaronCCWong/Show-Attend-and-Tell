@@ -22,11 +22,11 @@ class ImageCaptionDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_paths[self.caption_img_idx[index]]
-        img = pil_loader(img_path)
+        img = torch.tensor(pil_loader(img_path))
         if self.transform is not None:
             img = self.transform(img)
 
-        return img, self.captions[index]
+        return img, torch.tensor(self.captions[index])
 
     def __len__(self):
         return len(self.captions)
