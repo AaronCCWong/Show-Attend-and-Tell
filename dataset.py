@@ -22,7 +22,7 @@ class ImageCaptionDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_paths[self.caption_img_idx[index]]
-        img = torch.tensor(pil_loader(img_path))
+        img = torch.FloatTensor(pil_loader(img_path))
         if self.transform is not None:
             img = self.transform(img)
 
