@@ -2,6 +2,7 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.autograd import Variable
 from torchvision import transforms
 
 from dataset import ImageCaptionDataset
@@ -11,9 +12,7 @@ from encoder import Encoder
 
 def main(args):
     encoder = Encoder()
-    encoder.cuda()
     decoder = Decoder()
-    decoder.cuda()
 
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
     cross_entropy_loss = nn.CrossEntropyLoss()
@@ -29,6 +28,7 @@ def main(args):
         ImageCaptionDataset(data_transforms, 'data/coco/imgs', 'data/coco/dataset.json'),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
+    print('Starting training.')
     for epoch in range(1, args.epochs + 1):
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
               train_loader, args.alpha_c, args.log_interval)
@@ -38,9 +38,13 @@ def main(args):
 
 
 def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, alpha_c, log_interval):
+    encoder.cuda()
+    decoder.cuda()
+
     encoder.eval()
     decoder.train()
     for batch_idx, (imgs, captions) in enumerate(data_loader):
+        imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
         img_features = encoder(imgs)
         optimizer.zero_grad()
         preds, alphas = decoder(img_features, captions)
