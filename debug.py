@@ -16,3 +16,5 @@ b = torch.ones(64, 13).long()
 
 decoder = Decoder()
 preds, alphas = decoder(a, b)
+
+print(data.captions)

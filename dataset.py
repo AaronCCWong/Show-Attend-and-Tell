@@ -35,29 +35,33 @@ class ImageCaptionDataset(Dataset):
         images = [img for img in self.split['images'] if img['split'] == split_type]
 
         img_paths, caption_tokens = [], []
+        max_length = 0
         for img in images:
             img_paths.append(data_path + '/' + img['filepath'] + '/' + img['filename'])
             for sen in img['sentences']:
+                max_length = max(max_length, len(sen['tokens']))
                 self.word_count.update(sen['tokens'])
                 caption_tokens.append(sen['tokens'])
                 self.caption_img_idx[len(caption_tokens)-1] = len(img_paths)-1
 
-        captions = self.process_caption_tokens(caption_tokens)
+        captions = self.process_caption_tokens(caption_tokens, max_length)
 
         return img_paths, captions
 
-    def process_caption_tokens(self, caption_tokens):
+    def process_caption_tokens(self, caption_tokens, max_length):
         words = [word for word in self.word_count.keys()]
         word_dict = { word: idx + 3 for idx, word in enumerate(words) }
         word_dict['<start>'] = 0
         word_dict['<eos>'] = 1
         word_dict['<unk>'] = 2
+        word_dict['<pad>'] = 3
 
         captions = []
         for tokens in caption_tokens:
             token_idxs = [word_dict[token]
                 if word_dict[token] else word_dict['<unk>'] for token in tokens]
             captions.append(
-                [word_dict['<start>']] + token_idxs + [word_dict['<eos>']])
+                [word_dict['<start>']] + token_idxs + [word_dict['<eos>']] + \
+                [word_dict['<pad>']] * (max_length - len(tokens)))
 
         return captions
