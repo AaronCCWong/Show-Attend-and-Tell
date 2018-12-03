@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.nn.utils.rnn import pack_padded_sequence
 from torchvision import transforms
 
 from dataset import ImageCaptionDataset
@@ -15,7 +16,7 @@ def main(args):
     decoder = Decoder()
 
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
-    cross_entropy_loss = nn.CrossEntropyLoss()
+    cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
     data_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -49,6 +50,9 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, a
         optimizer.zero_grad()
         preds, alphas = decoder(img_features, captions)
         targets = captions[:, 1:]
+
+        targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
+        preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0] 
 
         att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
