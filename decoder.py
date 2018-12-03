@@ -28,8 +28,8 @@ class Decoder(nn.Module):
         prev_words = torch.zeros(batch_size, 1).long()
         embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
 
-        preds = torch.zeros(batch_size, max_timespan, 23531)
-        alphas = torch.zeros(batch_size, max_timespan, img_features.size(1))
+        preds = torch.zeros(batch_size, max_timespan, 23531).cuda()
+        alphas = torch.zeros(batch_size, max_timespan, img_features.size(1)).cuda()
         for t in range(max_timespan):
             context, alpha = self.attention(img_features, h)
             gate = self.sigmoid(self.f_beta(h))

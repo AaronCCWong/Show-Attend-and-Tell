@@ -1,4 +1,8 @@
 __pycache__
 .vscode
 
+batch.s
+results.out
+
 data/coco
+model/model*
