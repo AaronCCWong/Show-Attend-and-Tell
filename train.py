@@ -30,7 +30,11 @@ def main(args):
     ])
 
     train_loader = torch.utils.data.DataLoader(
-        ImageCaptionDataset(data_transforms, 'data/coco/imgs', 'data/coco/dataset.json'),
+        ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json'),
+        batch_size=args.batch_size, shuffle=True, num_workers=1)
+
+    val_loader = torch.utils.data.DataLoader(
+        ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json', split_type='val'),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     print('Starting training with {}'.format(args))
@@ -57,7 +61,7 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, a
         targets = captions[:, 1:]
 
         targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
-        preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0] 
+        preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
 
         att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
@@ -85,5 +89,7 @@ if __name__ == "__main__":
                         help='regularization constant (default: 1)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='L',
                         help='number of batches to wait before logging training stats (default: 100)')
+    parser.add_argument('--data', type=str, default='data/coco',
+                        help='path to data images (default: data/coco)')
 
     main(parser.parse_args())
