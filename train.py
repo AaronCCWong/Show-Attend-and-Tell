@@ -2,6 +2,7 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from torchvision import transforms
 
@@ -11,6 +12,9 @@ from encoder import Encoder
 
 
 def main(args):
+    train_writer = SummaryWriter()
+    validation_writer = SummaryWriter()
+
     encoder = Encoder()
     decoder = Decoder()
 
@@ -28,16 +32,17 @@ def main(args):
         ImageCaptionDataset(data_transforms, 'data/coco/imgs', 'data/coco/dataset.json'),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
-    print('Starting training.')
+    print('Starting training with {}'.format(args))
     for epoch in range(1, args.epochs + 1):
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
-              train_loader, args.alpha_c, args.log_interval)
+              train_loader, args.alpha_c, args.log_interval, train_writer)
         model_file = 'model/model_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
 
 
-def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, alpha_c, log_interval):
+
+def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, alpha_c, log_interval, writer):
     encoder.cuda()
     decoder.cuda()
 
@@ -57,6 +62,7 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, a
         loss.backward()
         optimizer.step()
 
+        writer.add_scalar('train/epoch_{}_loss'.format(epoch), loss.item(), batch_idx)
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(imgs), len(data_loader.dataset),
