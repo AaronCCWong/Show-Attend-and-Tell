@@ -25,7 +25,7 @@ class Decoder(nn.Module):
         h, c = self.get_init_lstm_state(img_features)
         max_timespan = max([len(caption) for caption in captions]) - 1
 
-        prev_words = torch.zeros(batch_size, 1).long()
+        prev_words = torch.zeros(batch_size, 1).long().cuda()
         embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
 
         preds = torch.zeros(batch_size, max_timespan, 23531).cuda()
