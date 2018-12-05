@@ -13,6 +13,14 @@ from encoder import Encoder
 from utils import AverageMeter, accuracy
 
 
+data_transforms = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
+
 def main(args):
     train_writer = SummaryWriter()
     validation_writer = SummaryWriter()
@@ -25,13 +33,6 @@ def main(args):
 
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
-
-    data_transforms = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ])
 
     train_loader = torch.utils.data.DataLoader(
         ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json'),
