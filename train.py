@@ -42,8 +42,8 @@ def main(args):
     for epoch in range(1, args.epochs + 1):
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
               train_loader, args.alpha_c, args.log_interval, train_writer)
-        validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
-                 args.alpha_c, args.log_interval, validation_writer)
+        #validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
+        #         args.alpha_c, args.log_interval, validation_writer)
         model_file = 'model/model_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
