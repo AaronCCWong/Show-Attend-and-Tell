@@ -25,11 +25,8 @@ class Decoder(nn.Module):
         h, c = self.get_init_lstm_state(img_features)
         max_timespan = max([len(caption) for caption in captions]) - 1
 
-        prev_words = torch.zeros(batch_size, 1).long().cuda()
-        print('prev_words shape: {}'.format(prev_words.shape))
-
+        prev_words = torch.zeros(batch_size, max_timespan + 1).long().cuda()
         embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
-        print('first embedding shape: {}'.format(embedding.shape))
 
         preds = torch.zeros(batch_size, max_timespan, 23531).cuda()
         alphas = torch.zeros(batch_size, max_timespan, img_features.size(1)).cuda()
@@ -46,10 +43,9 @@ class Decoder(nn.Module):
             alphas[:, t] = alpha
 
             if not self.training:
-                print('output shape: {}'.format(output.max(1)[1].shape))
-                print('reshaped output shape: {}'.format(output.max(1)[1].reshape(batch_size, 1).shape))
-                embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
-                print('embedding shape {}'.format(embedding.shape))
+                prev_words[:, t+1] = output.max(1)[1]
+                embedding = self.embedding(prev_words)
+            break
         return preds, alphas
 
     def get_init_lstm_state(self, img_features):

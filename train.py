@@ -20,6 +20,9 @@ def main(args):
     encoder = Encoder()
     decoder = Decoder()
 
+    encoder.cuda()
+    decoder.cuda()
+
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
@@ -42,8 +45,8 @@ def main(args):
     for epoch in range(1, args.epochs + 1):
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
               train_loader, args.alpha_c, args.log_interval, train_writer)
-        #validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
-        #         args.alpha_c, args.log_interval, validation_writer)
+        validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
+                 args.alpha_c, args.log_interval, validation_writer)
         model_file = 'model/model_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
@@ -52,11 +55,12 @@ def main(args):
 
 
 def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, alpha_c, log_interval, writer):
-    encoder.cuda()
-    decoder.cuda()
-
     encoder.eval()
     decoder.train()
+
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
     for batch_idx, (imgs, captions) in enumerate(data_loader):
         imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
         img_features = encoder(imgs)
@@ -74,17 +78,24 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, a
         loss.backward()
         optimizer.step()
 
+        total_caption_length = sum([len(caption) for caption in captions])
+        acc1, acc5 = accuracy(preds, targets, topk=(1, 5))
+        losses.update(loss.item(), total_caption_length)
+        top1.update(acc1[0], total_caption_length)
+        top5.update(acc5[0], total_caption_length)
+
         writer.add_scalar('train/epoch_{}_loss'.format(epoch), loss.item(), batch_idx)
+        writer.add_scalar('train/epoch_{}_top1_acc'.format(epoch), acc1[0], batch_idx)
+        writer.add_scalar('train/epoch_{}_top5_acc'.format(epoch), acc5[0], batch_idx)
         if batch_idx % log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(imgs), len(data_loader.dataset),
-                100. * batch_idx / len(data_loader), loss.item()))
+            print('Train Batch: [{0}/{1}]\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Top 1 Accuracy {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'Top 5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(
+                      batch_idx, len(data_loader), loss=losses, top1=top1, top5=top5))
 
 
 def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, alpha_c, log_interval, writer):
-    encoder.cuda()
-    decoder.cuda()
-
     encoder.eval()
     decoder.eval()
 
@@ -93,6 +104,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, alpha_c, 
     top5 = AverageMeter()
     with torch.no_grad():
         for batch_idx, (imgs, captions) in enumerate(data_loader):
+            print('Starting batch {}'.format(batch_idx))
             imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
             img_features = encoder(imgs)
             preds, alphas = decoder(img_features, captions)
@@ -116,7 +128,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, alpha_c, 
             writer.add_scalar('val/epoch_{}_top1_acc'.format(epoch), acc1[0], batch_idx)
             writer.add_scalar('val/epoch_{}_top5_acc'.format(epoch), acc5[0], batch_idx)
             if batch_idx % log_interval == 0:
-                print('Batch: [{0}/{1}]\t'
+                print('Validation Batch: [{0}/{1}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                       'Top 1 Accuracy {top1.val:.3f} ({top1.avg:.3f})\t'
                       'Top 5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(
