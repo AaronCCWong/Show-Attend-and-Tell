@@ -1,4 +1,4 @@
-import json
+import json, os
 import torch
 from collections import Counter
 from PIL import Image
@@ -38,7 +38,8 @@ class ImageCaptionDataset(Dataset):
         img_paths, caption_tokens = [], []
         max_length = 0
         for img in images:
-            img_paths.append(data_path + '/' + img['filepath'] + '/' + img['filename'])
+            if os.path.isfile(data_path + '/' + img['filepath'] + '/' + img['filename']):
+                img_paths.append(data_path + '/' + img['filepath'] + '/' + img['filename'])
             for sen in img['sentences']:
                 max_length = max(max_length, len(sen['tokens']))
                 self.word_count.update(sen['tokens'])

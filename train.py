@@ -34,9 +34,9 @@ def main(args):
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
-    train_loader = torch.utils.data.DataLoader(
-        ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json'),
-        batch_size=args.batch_size, shuffle=True, num_workers=1)
+    # train_loader = torch.utils.data.DataLoader(
+    #     ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json'),
+    #     batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     val_loader = torch.utils.data.DataLoader(
         ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json', split_type='val'),
@@ -44,8 +44,8 @@ def main(args):
 
     print('Starting training with {}'.format(args))
     for epoch in range(1, args.epochs + 1):
-        train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
-              train_loader, args.alpha_c, args.log_interval, train_writer)
+        # train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
+            #   train_loader, args.alpha_c, args.log_interval, train_writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
                  args.alpha_c, args.log_interval, validation_writer)
         model_file = 'model/model_' + str(epoch) + '.pth'

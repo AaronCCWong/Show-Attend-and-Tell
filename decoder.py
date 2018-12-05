@@ -25,7 +25,7 @@ class Decoder(nn.Module):
         h, c = self.get_init_lstm_state(img_features)
         max_timespan = max([len(caption) for caption in captions]) - 1
 
-        prev_words = torch.zeros(batch_size, max_timespan + 1).long().cuda()
+        prev_words = torch.zeros(batch_size, 1).long().cuda()
         embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
 
         preds = torch.zeros(batch_size, max_timespan, 23531).cuda()
@@ -35,7 +35,12 @@ class Decoder(nn.Module):
             gate = self.sigmoid(self.f_beta(h))
             gated_context = gate * context
 
-            lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
+            if self.training:
+                lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
+            else:
+                embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
+                lstm_input = torch.cat((embedding, gated_context), dim=1)
+
             h, c = self.lstm(lstm_input, (h, c))
             output = self.tanh(self.deep_output(h))
 
@@ -43,9 +48,7 @@ class Decoder(nn.Module):
             alphas[:, t] = alpha
 
             if not self.training:
-                prev_words[:, t+1] = output.max(1)[1]
-                embedding = self.embedding(prev_words)
-            break
+                embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
         return preds, alphas
 
     def get_init_lstm_state(self, img_features):
