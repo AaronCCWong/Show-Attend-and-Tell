@@ -1,4 +1,4 @@
-import argparse
+import argparse, json
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -24,9 +24,11 @@ data_transforms = transforms.Compose([
 def main(args):
     train_writer = SummaryWriter()
     validation_writer = SummaryWriter()
+    word_dict = json.load(open(args.data + '/word_dict.json', 'r'))
+    vocabulary_size = len(word_dict)
 
     encoder = Encoder()
-    decoder = Decoder()
+    decoder = Decoder(vocabulary_size)
 
     encoder.cuda()
     decoder.cuda()
@@ -34,18 +36,18 @@ def main(args):
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
-    # train_loader = torch.utils.data.DataLoader(
-    #     ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json'),
-    #     batch_size=args.batch_size, shuffle=True, num_workers=1)
+    train_loader = torch.utils.data.DataLoader(
+        ImageCaptionDataset(data_transforms),
+        batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     val_loader = torch.utils.data.DataLoader(
-        ImageCaptionDataset(data_transforms, args.data + '/imgs', args.data + '/dataset.json', split_type='val'),
+        ImageCaptionDataset(data_transforms, split_type='val'),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     print('Starting training with {}'.format(args))
     for epoch in range(1, args.epochs + 1):
-        # train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
-        #       train_loader, args.alpha_c, args.log_interval, train_writer)
+        train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
+              train_loader, args.alpha_c, args.log_interval, train_writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
                  args.alpha_c, args.log_interval, validation_writer)
         model_file = 'model/model_' + str(epoch) + '.pth'
