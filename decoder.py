@@ -22,6 +22,10 @@ class Decoder(nn.Module):
         self.lstm = nn.LSTMCell(1024, 512)
 
     def forward(self, img_features, captions):
+        """
+        We use teacher forcing during training. For reference, refer to
+        https://www.deeplearningbook.org/contents/rnn.html
+        """
         batch_size = img_features.size(0)
 
         h, c = self.get_init_lstm_state(img_features)
