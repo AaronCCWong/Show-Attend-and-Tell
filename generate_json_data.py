@@ -17,7 +17,6 @@ def generate_json_data(split_path, data_path):
             max_length = max(max_length, len(sentence['tokens']))
             word_count.update(sentence['tokens'])
             if img['split'] == 'train':
-                print(img['filepath'])
                 train_img_paths.append(data_path + '/imgs/' + img['filepath'] + '/' + img['filename'])
                 train_caption_tokens.append(sentence['tokens'])
             elif img['split'] == 'val':
