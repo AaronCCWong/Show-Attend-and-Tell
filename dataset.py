@@ -12,14 +12,14 @@ def pil_loader(path):
 
 
 class ImageCaptionDataset(Dataset):
-    def __init__(self, transform, split_type='train'):
+    def __init__(self, transform, data_path, split_type='train'):
         super(ImageCaptionDataset, self).__init__()
         self.transform = transform
 
         self.word_count = Counter()
         self.caption_img_idx = {}
-        self.img_paths = json.load(open('{}_img_paths.json'.format(split_type), 'r'))
-        self.captions = json.load(open('{}_captions.json'.format(split_type), 'r'))
+        self.img_paths = json.load(open(data_path + '/{}_img_paths.json'.format(split_type), 'r'))
+        self.captions = json.load(open(data_path + '/{}_captions.json'.format(split_type), 'r'))
 
     def __getitem__(self, index):
         img_path = self.img_paths[index]

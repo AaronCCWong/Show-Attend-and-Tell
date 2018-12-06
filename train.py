@@ -37,11 +37,11 @@ def main(args):
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
     train_loader = torch.utils.data.DataLoader(
-        ImageCaptionDataset(data_transforms),
+        ImageCaptionDataset(data_transforms, args.data),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     val_loader = torch.utils.data.DataLoader(
-        ImageCaptionDataset(data_transforms, split_type='val'),
+        ImageCaptionDataset(data_transforms, args.data, split_type='val'),
         batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     print('Starting training with {}'.format(args))
