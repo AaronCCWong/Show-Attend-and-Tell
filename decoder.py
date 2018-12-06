@@ -4,8 +4,10 @@ from attention import Attention
 
 
 class Decoder(nn.Module):
-    def __init__(self):
+    def __init__(self, vocabulary_size):
         super(Decoder, self).__init__()
+        self.vocabulary_size = vocabulary_size
+
         self.init_h = nn.Linear(512, 512)
         self.init_c = nn.Linear(512, 512)
         self.tanh = nn.Tanh()
@@ -13,10 +15,10 @@ class Decoder(nn.Module):
         self.f_beta = nn.Linear(512, 512)
         self.sigmoid = nn.Sigmoid()
 
-        self.deep_output = nn.Linear(512, 23531)
+        self.deep_output = nn.Linear(512, vocabulary_size)
 
         self.attention = Attention()
-        self.embedding = nn.Embedding(23531, 512)
+        self.embedding = nn.Embedding(vocabulary_size, 512)
         self.lstm = nn.LSTMCell(1024, 512)
 
     def forward(self, img_features, captions):
@@ -28,7 +30,7 @@ class Decoder(nn.Module):
         prev_words = torch.zeros(batch_size, 1).long().cuda()
         embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
 
-        preds = torch.zeros(batch_size, max_timespan, 23531).cuda()
+        preds = torch.zeros(batch_size, max_timespan, self.vocabulary_size).cuda()
         alphas = torch.zeros(batch_size, max_timespan, img_features.size(1)).cuda()
         for t in range(max_timespan):
             context, alpha = self.attention(img_features, h)
