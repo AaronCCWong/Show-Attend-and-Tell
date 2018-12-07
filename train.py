@@ -109,7 +109,6 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, alpha_c, 
     top5 = AverageMeter()
     with torch.no_grad():
         for batch_idx, (imgs, captions) in enumerate(data_loader):
-            print('Starting batch {}'.format(batch_idx))
             imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
             img_features = encoder(imgs)
             preds, alphas = decoder(img_features, captions)
