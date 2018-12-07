@@ -16,6 +16,7 @@ class Decoder(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
         self.deep_output = nn.Linear(512, vocabulary_size)
+        self.dropout = nn.Dropout()
 
         self.attention = Attention()
         self.embedding = nn.Embedding(vocabulary_size, 512)
@@ -48,7 +49,7 @@ class Decoder(nn.Module):
                 lstm_input = torch.cat((embedding, gated_context), dim=1)
 
             h, c = self.lstm(lstm_input, (h, c))
-            output = self.tanh(self.deep_output(h))
+            output = self.tanh(self.deep_output(self.dropout(h)))
 
             preds[:, t] = output
             alphas[:, t] = alpha
