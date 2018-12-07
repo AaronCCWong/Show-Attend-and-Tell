@@ -34,6 +34,7 @@ def main(args):
     decoder.cuda()
 
     optimizer = optim.Adam(decoder.parameters(), lr=args.lr)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, args.step_size)
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
     train_loader = torch.utils.data.DataLoader(
@@ -46,6 +47,7 @@ def main(args):
 
     print('Starting training with {}'.format(args))
     for epoch in range(1, args.epochs + 1):
+        scheduler.step()
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
               train_loader, args.alpha_c, args.log_interval, train_writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
@@ -146,6 +148,8 @@ if __name__ == "__main__":
                         help='number of epochs to train for (default: 10)')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='learning rate of the decoder (default: 1e-3)')
+    parser.add_argument('--step-size', type=int, default=5,
+                        help='step size for learning rate annealing (default: 5)')
     parser.add_argument('--alpha-c', type=float, default=1, metavar='A',
                         help='regularization constant (default: 1)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='L',
