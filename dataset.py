@@ -14,6 +14,7 @@ def pil_loader(path):
 class ImageCaptionDataset(Dataset):
     def __init__(self, transform, data_path, split_type='train'):
         super(ImageCaptionDataset, self).__init__()
+        self.split_type = split_type
         self.transform = transform
 
         self.word_count = Counter()
@@ -27,7 +28,12 @@ class ImageCaptionDataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        return torch.FloatTensor(img), torch.tensor(self.captions[index])
+        if self.split_type == 'train':
+            return torch.FloatTensor(img), torch.tensor(self.captions[index])
+
+        matching_idxs = [idx for idx, path in enumerate(self.img_paths) if path == img_path]
+        all_captions = [self.captions[idx] for idx in matching_idxs]
+        return torch.FloatTensor(img), torch.tensor(self.captions[index]), torch.tensor(all_captions)
 
     def __len__(self):
         return len(self.captions)

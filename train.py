@@ -2,6 +2,7 @@ import argparse, json
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from nltk.translate.bleu_score import corpus_bleu
 from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence
@@ -51,7 +52,7 @@ def main(args):
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
               train_loader, args.alpha_c, args.log_interval, train_writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
-                 args.alpha_c, args.log_interval, validation_writer)
+                 word_dict, args.alpha_c, args.log_interval, validation_writer)
         model_file = 'model/model_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
@@ -100,33 +101,50 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, a
                       batch_idx, len(data_loader), loss=losses, top1=top1, top5=top5))
 
 
-def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, alpha_c, log_interval, writer):
+def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict, alpha_c, log_interval, writer):
     encoder.eval()
     decoder.eval()
 
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
+
+    # used for calculating bleu scores
+    references = []
+    hypotheses = []
     with torch.no_grad():
-        for batch_idx, (imgs, captions) in enumerate(data_loader):
+        for batch_idx, (imgs, captions, all_captions) in enumerate(data_loader):
             imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
             img_features = encoder(imgs)
             preds, alphas = decoder(img_features, captions)
             targets = captions[:, 1:]
 
             targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
-            preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
+            packed_preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
 
             att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
-            loss = cross_entropy_loss(preds, targets)
+            loss = cross_entropy_loss(packed_preds, targets)
             loss += att_regularization
 
             total_caption_length = sum([len(caption) for caption in captions])
-            acc1, acc5 = accuracy(preds, targets, topk=(1, 5))
+            acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
             losses.update(loss.item(), total_caption_length)
             top1.update(acc1[0], total_caption_length)
             top5.update(acc5[0], total_caption_length)
+
+            for cap_set in all_captions.tolist():
+                caps = []
+                for caption in cap_set:
+                    cap = [word_idx for word_idx in caption
+                                    if word_idx != word_dict['<start>'] and word_idx != word_dict['<pad>']]
+                    caps.append(cap)
+                references.append(caps)
+
+            word_idxs = torch.max(preds, dim=2)[1]
+            for idxs in word_idxs.tolist():
+                hypotheses.append([idx for idx in idxs
+                                       if idx != word_dict['<start>'] and idx != word_dict['<pad>']])
 
             writer.add_scalar('val/epoch_{}_loss'.format(epoch), loss.item(), batch_idx)
             writer.add_scalar('val/epoch_{}_top1_acc'.format(epoch), acc1[0], batch_idx)
@@ -137,6 +155,21 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, alpha_c, 
                       'Top 1 Accuracy {top1.val:.3f} ({top1.avg:.3f})\t'
                       'Top 5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(
                           batch_idx, len(data_loader), loss=losses, top1=top1, top5=top5))
+
+        bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
+        bleu_2 = corpus_bleu(references, hypotheses, weights=(0.5, 0.5, 0, 0))
+        bleu_3 = corpus_bleu(references, hypotheses, weights=(0.33, 0.33, 0.33, 0))
+        bleu_4 = corpus_bleu(references, hypotheses)
+
+        writer.add_scalar('val/epoch_{}_bleu1'.format(epoch), bleu_1, epoch)
+        writer.add_scalar('val/epoch_{}_bleu2'.format(epoch), bleu_2, epoch)
+        writer.add_scalar('val/epoch_{}_bleu3'.format(epoch), bleu_3, epoch)
+        writer.add_scalar('val/epoch_{}_bleu4'.format(epoch), bleu_4, epoch)
+        print('Validation Epoch: {}\t'
+              'BLEU-1 ({})\t'
+              'BLEU-2 ({})\t'
+              'BLEU-3 ({})\t'
+              'BLEU-4 ({})\t'.format(epoch, bleu_1, bleu_2, bleu_3, bleu_4))
 
 
 if __name__ == "__main__":
