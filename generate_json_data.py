@@ -2,7 +2,7 @@ import argparse, json
 from collections import Counter
 
 
-def generate_json_data(split_path, data_path):
+def generate_json_data(split_path, data_path, max_captions_per_image):
     split = json.load(open(split_path, 'r'))
     word_count = Counter()
 
@@ -13,15 +13,20 @@ def generate_json_data(split_path, data_path):
 
     max_length = 0
     for img in split['images']:
+        caption_count = 0
         for sentence in img['sentences']:
-            max_length = max(max_length, len(sentence['tokens']))
-            word_count.update(sentence['tokens'])
+            if caption_count < max_captions_per_image:
+                caption_count += 1
+            else:
+                break
             if img['split'] == 'train':
                 train_img_paths.append(data_path + '/imgs/' + img['filepath'] + '/' + img['filename'])
                 train_caption_tokens.append(sentence['tokens'])
             elif img['split'] == 'val':
                 validation_img_paths.append(data_path + '/imgs/' + img['filepath'] + '/' + img['filename'])
                 validation_caption_tokens.append(sentence['tokens'])
+            max_length = max(max_length, len(sentence['tokens']))
+            word_count.update(sentence['tokens'])
 
     words = [word for word in word_count.keys()]
     word_dict = {word: idx + 4 for idx, word in enumerate(words)}
@@ -61,6 +66,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate json files')
     parser.add_argument('--split-path', type=str, default='data/coco/dataset.json')
     parser.add_argument('--data-path', type=str, default='data/coco')
+    parser.add_argument('--max-captions', type=int, default=5,
+                        help='maximum number of captions per image')
     args = parser.parse_args()
 
-    generate_json_data(args.split_path, args.data_path)
+    generate_json_data(args.split_path, args.data_path, args.max_captions)
