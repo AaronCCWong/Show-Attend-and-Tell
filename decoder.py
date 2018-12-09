@@ -49,7 +49,7 @@ class Decoder(nn.Module):
                 lstm_input = torch.cat((embedding, gated_context), dim=1)
 
             h, c = self.lstm(lstm_input, (h, c))
-            output = self.tanh(self.deep_output(self.dropout(h)))
+            output = self.deep_output(self.dropout(h))
 
             preds[:, t] = output
             alphas[:, t] = alpha
@@ -91,7 +91,7 @@ class Decoder(nn.Module):
 
             lstm_input = torch.cat((embedding, gated_context), dim=1)
             h, c = self.lstm(lstm_input, (h, c))
-            output = self.tanh(self.deep_output(h))
+            output = self.deep_output(h)
             output = top_preds.expand_as(output) + output
 
             if step == 1:
