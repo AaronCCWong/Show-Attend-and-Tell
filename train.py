@@ -178,8 +178,8 @@ if __name__ == "__main__":
                         help='batch size for training (default: 64)')
     parser.add_argument('--epochs', type=int, default=10, metavar='E',
                         help='number of epochs to train for (default: 10)')
-    parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
-                        help='learning rate of the decoder (default: 1e-3)')
+    parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
+                        help='learning rate of the decoder (default: 1e-4)')
     parser.add_argument('--step-size', type=int, default=5,
                         help='step size for learning rate annealing (default: 5)')
     parser.add_argument('--alpha-c', type=float, default=1, metavar='A',
