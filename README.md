@@ -9,7 +9,8 @@
 - [x] Implement attention model
 - [x] Implement decoder feed forward function
 - [x] Write training function
-- [ ] Write validation function
+- [x] Write validation function
+- [ ] Add BLEU evaluation
 
 ## References
 
