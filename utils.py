@@ -34,3 +34,14 @@ def accuracy(preds, targets, topk=(1,)):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
+
+def calculate_caption_lengths(word_dict, captions):
+    lengths = 0
+    for caption_tokens in captions:
+        for token in caption_tokens:
+            if token in (word_dict['<start>'], word_dict['<eos>'], word_dict['<pad>']):
+                continue
+            else:
+                length += 1
+    return lengths
+

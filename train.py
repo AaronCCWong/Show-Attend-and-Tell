@@ -11,7 +11,7 @@ from torchvision import transforms
 from dataset import ImageCaptionDataset
 from decoder import Decoder
 from encoder import Encoder
-from utils import AverageMeter, accuracy
+from utils import AverageMeter, accuracy, calculate_caption_lengths
 
 
 data_transforms = transforms.Compose([
@@ -23,8 +23,8 @@ data_transforms = transforms.Compose([
 
 
 def main(args):
-    train_writer = SummaryWriter()
-    validation_writer = SummaryWriter()
+    writer = SummaryWriter()
+
     word_dict = json.load(open(args.data + '/word_dict.json', 'r'))
     vocabulary_size = len(word_dict)
 
@@ -50,17 +50,16 @@ def main(args):
     for epoch in range(1, args.epochs + 1):
         scheduler.step()
         train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
-              train_loader, args.alpha_c, args.log_interval, train_writer)
+              train_loader, word_dict, args.alpha_c, args.log_interval, writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
-                 word_dict, args.alpha_c, args.log_interval, validation_writer)
+                 word_dict, args.alpha_c, args.log_interval, writer)
         model_file = 'model/model_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
-    train_writer.close()
-    validation_writer.close()
+    writer.close()
 
 
-def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, alpha_c, log_interval, writer):
+def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, word_dict, alpha_c, log_interval, writer):
     encoder.eval()
     decoder.train()
 
@@ -84,21 +83,21 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, a
         loss.backward()
         optimizer.step()
 
-        total_caption_length = sum([len(caption) for caption in captions])
+        total_caption_length = calculate_caption_lengths(word_dict, captions)
         acc1, acc5 = accuracy(preds, targets, topk=(1, 5))
         losses.update(loss.item(), total_caption_length)
         top1.update(acc1[0], total_caption_length)
         top5.update(acc5[0], total_caption_length)
 
-        writer.add_scalar('train/epoch_{}_loss'.format(epoch), loss.item(), batch_idx)
-        writer.add_scalar('train/epoch_{}_top1_acc'.format(epoch), acc1[0], batch_idx)
-        writer.add_scalar('train/epoch_{}_top5_acc'.format(epoch), acc5[0], batch_idx)
         if batch_idx % log_interval == 0:
             print('Train Batch: [{0}/{1}]\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'Top 1 Accuracy {top1.val:.3f} ({top1.avg:.3f})\t'
                   'Top 5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(
                       batch_idx, len(data_loader), loss=losses, top1=top1, top5=top5))
+    writer.add_scalar('train_loss', losses.avg, epoch)
+    writer.add_scalar('train_top1_acc', top1.avg, epoch)
+    writer.add_scalar('train_top5_acc', top5.avg, epoch)
 
 
 def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict, alpha_c, log_interval, writer):
@@ -127,7 +126,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
             loss = cross_entropy_loss(packed_preds, targets)
             loss += att_regularization
 
-            total_caption_length = sum([len(caption) for caption in captions])
+            total_caption_length = calculate_caption_lengths(word_dict, captions)
             acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
             losses.update(loss.item(), total_caption_length)
             top1.update(acc1[0], total_caption_length)
@@ -146,25 +145,25 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
                 hypotheses.append([idx for idx in idxs
                                        if idx != word_dict['<start>'] and idx != word_dict['<pad>']])
 
-            writer.add_scalar('val/epoch_{}_loss'.format(epoch), loss.item(), batch_idx)
-            writer.add_scalar('val/epoch_{}_top1_acc'.format(epoch), acc1[0], batch_idx)
-            writer.add_scalar('val/epoch_{}_top5_acc'.format(epoch), acc5[0], batch_idx)
             if batch_idx % log_interval == 0:
                 print('Validation Batch: [{0}/{1}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                       'Top 1 Accuracy {top1.val:.3f} ({top1.avg:.3f})\t'
                       'Top 5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(
                           batch_idx, len(data_loader), loss=losses, top1=top1, top5=top5))
+        writer.add_scalar('val_loss', losses.avg, epoch)
+        writer.add_scalar('val_top1_acc', top1.avg, epoch)
+        writer.add_scalar('val_top5_acc', top5.avg, epoch)
 
         bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
         bleu_2 = corpus_bleu(references, hypotheses, weights=(0.5, 0.5, 0, 0))
         bleu_3 = corpus_bleu(references, hypotheses, weights=(0.33, 0.33, 0.33, 0))
         bleu_4 = corpus_bleu(references, hypotheses)
 
-        writer.add_scalar('val/epoch_{}_bleu1'.format(epoch), bleu_1, epoch)
-        writer.add_scalar('val/epoch_{}_bleu2'.format(epoch), bleu_2, epoch)
-        writer.add_scalar('val/epoch_{}_bleu3'.format(epoch), bleu_3, epoch)
-        writer.add_scalar('val/epoch_{}_bleu4'.format(epoch), bleu_4, epoch)
+        writer.add_scalar('val_bleu1', bleu_1, epoch)
+        writer.add_scalar('val_bleu2', bleu_2, epoch)
+        writer.add_scalar('val_bleu3', bleu_3, epoch)
+        writer.add_scalar('val_bleu4', bleu_4, epoch)
         print('Validation Epoch: {}\t'
               'BLEU-1 ({})\t'
               'BLEU-2 ({})\t'
