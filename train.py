@@ -11,7 +11,7 @@ from torchvision import transforms
 from dataset import ImageCaptionDataset
 from decoder import Decoder
 from encoder import Encoder
-from utils import AverageMeter, accuracy, calculate_caption_lengths
+from utils import AverageMeter, accuracy
 
 
 data_transforms = transforms.Compose([
@@ -66,25 +66,34 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, w
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-    for batch_idx, (imgs, captions) in enumerate(data_loader):
+    for batch_idx, (imgs, captions, captions_length) in enumerate(data_loader):
         imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
+        captions_length = captions_length.squeeze(-1).cuda()
         img_features = encoder(imgs)
         optimizer.zero_grad()
-        preds, alphas = decoder(img_features, captions)
-        targets = captions[:, 1:]
+        preds, alphas = decoder(img_features, captions, captions_length)
 
-        targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
-        preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
+        # need to sort to make pack_padded_sequence work
+        sorted_lengths, idxs = captions_length.sort(descending=True)
+        sorted_captions = captions[idxs]
+        targets = sorted_captions[:, 1:]
+        sorted_preds = preds[idxs]
+
+        # plus 1 for <start>
+        sorted_lengths = [length + 1 for length in sorted_lengths]
+
+        targets = pack_padded_sequence(targets, sorted_lengths, batch_first=True)[0]
+        packed_preds = pack_padded_sequence(sorted_preds, sorted_lengths, batch_first=True)[0]
 
         att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
-        loss = cross_entropy_loss(preds, targets)
+        loss = cross_entropy_loss(packed_preds, targets)
         loss += att_regularization
         loss.backward()
         optimizer.step()
 
-        total_caption_length = calculate_caption_lengths(word_dict, captions)
-        acc1, acc5 = accuracy(preds, targets, topk=(1, 5))
+        total_caption_length = sum(sorted_lengths).float()
+        acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
         losses.update(loss.item(), total_caption_length)
         top1.update(acc1[0], total_caption_length)
         top5.update(acc5[0], total_caption_length)
@@ -112,21 +121,28 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
     references = []
     hypotheses = []
     with torch.no_grad():
-        for batch_idx, (imgs, captions, all_captions) in enumerate(data_loader):
+        for batch_idx, (imgs, captions, all_captions, captions_length) in enumerate(data_loader):
             imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
+            captions_length = captions_length.squeeze(-1).cuda()
             img_features = encoder(imgs)
-            preds, alphas = decoder(img_features, captions)
-            targets = captions[:, 1:]
+            preds, alphas = decoder(img_features, captions, captions_length)
 
-            targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
-            packed_preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
+            # need to sort to make pack_padded_sequence work
+            sorted_lengths, idxs = captions_length.sort(descending=True)
+            sorted_captions = captions[idxs]
+            targets = sorted_captions[:, 1:]
+            sorted_preds = preds[idxs]
+            sorted_lengths = [length + 1 for length in sorted_lengths] # plus 1 for <start>
+
+            targets = pack_padded_sequence(targets, sorted_lengths, batch_first=True)[0]
+            packed_preds = pack_padded_sequence(sorted_preds, sorted_lengths, batch_first=True)[0]
 
             att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
             loss = cross_entropy_loss(packed_preds, targets)
             loss += att_regularization
 
-            total_caption_length = calculate_caption_lengths(word_dict, captions)
+            total_caption_length = sum(sorted_lengths).float()
             acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
             losses.update(loss.item(), total_caption_length)
             top1.update(acc1[0], total_caption_length)
@@ -140,7 +156,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
                     caps.append(cap)
                 references.append(caps)
 
-            word_idxs = torch.max(preds, dim=2)[1]
+            word_idxs = torch.max(sorted_preds, dim=2)[1]
             for idxs in word_idxs.tolist():
                 hypotheses.append([idx for idx in idxs
                                        if idx != word_dict['<start>'] and idx != word_dict['<pad>']])

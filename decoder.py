@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 from attention import Attention
 
 
@@ -22,7 +23,7 @@ class Decoder(nn.Module):
         self.embedding = nn.Embedding(vocabulary_size, 512)
         self.lstm = nn.LSTMCell(1024, 512)
 
-    def forward(self, img_features, captions):
+    def forward(self, img_features, captions, captions_length):
         """
         We use teacher forcing during training. For reference, refer to
         https://www.deeplearningbook.org/contents/rnn.html
@@ -30,7 +31,7 @@ class Decoder(nn.Module):
         batch_size = img_features.size(0)
 
         h, c = self.get_init_lstm_state(img_features)
-        max_timespan = max([len(caption) for caption in captions]) - 1
+        max_timespan = max(captions_length) + 1 # plus 1 for <start>
 
         prev_words = torch.zeros(batch_size, 1).long().cuda()
         embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
