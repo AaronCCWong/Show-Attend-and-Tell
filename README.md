@@ -10,7 +10,9 @@
 - [x] Implement decoder feed forward function
 - [x] Write training function
 - [x] Write validation function
-- [ ] Add BLEU evaluation
+- [x] Add BLEU evaluation
+- [ ] Add performance statistics
+- [ ] Allow encoder to use resnet-152 and densenet-161
 
 ## References
 
