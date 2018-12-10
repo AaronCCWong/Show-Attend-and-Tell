@@ -26,6 +26,7 @@ def accuracy(preds, targets, topk=(1,)):
         res = []
         batch_size = targets.size(0)
         _, pred = preds.topk(maxk, 1, True, True)
+        pred = pred.t()
         correct = pred.eq(targets.view(-1, 1).expand_as(pred))
 
         for k in topk:
