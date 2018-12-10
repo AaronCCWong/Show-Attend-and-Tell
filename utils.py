@@ -42,6 +42,6 @@ def calculate_caption_lengths(word_dict, captions):
             if token in (word_dict['<start>'], word_dict['<eos>'], word_dict['<pad>']):
                 continue
             else:
-                length += 1
+                lengths += 1
     return lengths
 
