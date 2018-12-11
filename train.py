@@ -71,19 +71,19 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, w
         captions_length = captions_length.squeeze(-1).cuda()
         img_features = encoder(imgs)
         optimizer.zero_grad()
-        preds, alphas = decoder(img_features, captions, captions_length)
 
         # need to sort to make pack_padded_sequence work
         sorted_lengths, idxs = captions_length.sort(descending=True)
         sorted_captions = captions[idxs]
-        targets = sorted_captions[:, 1:]
-        sorted_preds = preds[idxs]
-
+        sorted_features = img_features[idxs]
         # plus 1 for <start>
         sorted_lengths = [length + 1 for length in sorted_lengths]
 
+        preds, alphas = decoder(sorted_features, sorted_captions, sorted_lengths)
+        targets = sorted_captions[:, 1:]
+
         targets = pack_padded_sequence(targets, sorted_lengths, batch_first=True)[0]
-        packed_preds = pack_padded_sequence(sorted_preds, sorted_lengths, batch_first=True)[0]
+        packed_preds = pack_padded_sequence(preds, sorted_lengths, batch_first=True)[0]
 
         att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
@@ -93,12 +93,11 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, w
         optimizer.step()
 
         total_caption_length = sum(sorted_lengths).float()
-        acc1 = accuracy(packed_preds, targets, 1) 
-        acc5 = accuracy(packed_preds, targets, 5)
+        acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
 
         losses.update(loss.item(), total_caption_length)
-        top1.update(acc1, total_caption_length)
-        top5.update(acc5, total_caption_length)
+        top1.update(acc1[0], total_caption_length)
+        top5.update(acc5[0], total_caption_length)
 
         if batch_idx % log_interval == 0:
             print('Train Batch: [{0}/{1}]\t'
@@ -127,17 +126,19 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
             imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
             captions_length = captions_length.squeeze(-1).cuda()
             img_features = encoder(imgs)
-            preds, alphas = decoder(img_features, captions, captions_length)
 
             # need to sort to make pack_padded_sequence work
             sorted_lengths, idxs = captions_length.sort(descending=True)
             sorted_captions = captions[idxs]
+            sorted_features = img_features[idxs]
+            # plus 1 for <start>
+            sorted_lengths = [length + 1 for length in sorted_lengths]
+
+            preds, alphas = decoder(sorted_features, sorted_captions, sorted_lengths)
             targets = sorted_captions[:, 1:]
-            sorted_preds = preds[idxs]
-            sorted_lengths = [length + 1 for length in sorted_lengths] # plus 1 for <start>
 
             targets = pack_padded_sequence(targets, sorted_lengths, batch_first=True)[0]
-            packed_preds = pack_padded_sequence(sorted_preds, sorted_lengths, batch_first=True)[0]
+            packed_preds = pack_padded_sequence(preds, sorted_lengths, batch_first=True)[0]
 
             att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
@@ -146,6 +147,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
 
             total_caption_length = sum(sorted_lengths).float()
             acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
+
             losses.update(loss.item(), total_caption_length)
             top1.update(acc1[0], total_caption_length)
             top5.update(acc5[0], total_caption_length)
@@ -158,7 +160,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
                     caps.append(cap)
                 references.append(caps)
 
-            word_idxs = torch.max(sorted_preds, dim=2)[1]
+            word_idxs = torch.max(preds, dim=2)[1]
             for idxs in word_idxs.tolist():
                 hypotheses.append([idx for idx in idxs
                                        if idx != word_dict['<start>'] and idx != word_dict['<pad>']])
