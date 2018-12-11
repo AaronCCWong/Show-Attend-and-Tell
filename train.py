@@ -93,10 +93,12 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, w
         optimizer.step()
 
         total_caption_length = sum(sorted_lengths).float()
-        acc1, acc5 = accuracy(packed_preds, targets, topk=(1, 5))
+        acc1 = accuracy(packed_preds, targets, 1) 
+        acc5 = accuracy(packed_preds, targets, 5)
+
         losses.update(loss.item(), total_caption_length)
-        top1.update(acc1[0], total_caption_length)
-        top5.update(acc5[0], total_caption_length)
+        top1.update(acc1, total_caption_length)
+        top5.update(acc5, total_caption_length)
 
         if batch_idx % log_interval == 0:
             print('Train Batch: [{0}/{1}]\t'
