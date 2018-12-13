@@ -50,15 +50,16 @@ class Decoder(nn.Module):
                 preds[:batch_size_t, t] = output
                 alphas[:batch_size_t, t] = alpha
             else:
-                context, alpha = self.attention(img_features, h)
-                gate = self.sigmoid(self.f_beta(h))
+                batch_size_t = sum([l > t - 1 for l in captions_length])
+                context, alpha = self.attention(img_features[:batch_size_t], h[:batch_size_t])
+                gate = self.sigmoid(self.f_beta(h[:batch_size_t]))
                 gated_context = gate * context
                 embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
-                lstm_input = torch.cat((embedding, gated_context), dim=1)
-                h, c = self.lstm(lstm_input, (h, c))
+                lstm_input = torch.cat((embedding[:batch_size_t], gated_context), dim=1)
+                h, c = self.lstm(lstm_input, (h[:batch_size_t], c[:batch_size_t]))
                 output = self.deep_output(self.dropout(h))
-                preds[:, t] = output
-                alphas[:, t] = alpha
+                preds[:batch_size_t, t] = output
+                alphas[:batch_size_t, t] = alpha
                 embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
         return preds, alphas
 
