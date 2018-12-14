@@ -31,6 +31,8 @@ def main(args):
     encoder = Encoder()
     decoder = Decoder(vocabulary_size)
 
+    # decoder.load_state_dict(torch.load('model/model_9.pth'))
+
     encoder.cuda()
     decoder.cuda()
 
@@ -38,9 +40,9 @@ def main(args):
     scheduler = optim.lr_scheduler.StepLR(optimizer, args.step_size)
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
 
-    train_loader = torch.utils.data.DataLoader(
-        ImageCaptionDataset(data_transforms, args.data),
-        batch_size=args.batch_size, shuffle=True, num_workers=1)
+    # train_loader = torch.utils.data.DataLoader(
+    #     ImageCaptionDataset(data_transforms, args.data),
+    #     batch_size=args.batch_size, shuffle=True, num_workers=1)
 
     val_loader = torch.utils.data.DataLoader(
         ImageCaptionDataset(data_transforms, args.data, split_type='val'),
@@ -49,13 +51,13 @@ def main(args):
     print('Starting training with {}'.format(args))
     for epoch in range(1, args.epochs + 1):
         scheduler.step()
-        train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
-              train_loader, word_dict, args.alpha_c, args.log_interval, writer)
+        # train(epoch, encoder, decoder, optimizer, cross_entropy_loss,
+        #       train_loader, word_dict, args.alpha_c, args.log_interval, writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
                  word_dict, args.alpha_c, args.log_interval, writer)
-        model_file = 'model/model_' + str(epoch) + '.pth'
-        torch.save(decoder.state_dict(), model_file)
-        print('Saved model to ' + model_file)
+        # model_file = 'model/model_' + str(epoch) + '.pth'
+        # torch.save(decoder.state_dict(), model_file)
+        # print('Saved model to ' + model_file)
     writer.close()
 
 
@@ -131,6 +133,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
             sorted_lengths, idxs = captions_length.sort(descending=True)
             sorted_captions = captions[idxs]
             sorted_features = img_features[idxs]
+            sorted_all_captions = all_captions[idxs]
             # plus 1 for <start>
             sorted_lengths = [length + 1 for length in sorted_lengths]
 
@@ -152,7 +155,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
             top1.update(acc1, total_caption_length)
             top5.update(acc5, total_caption_length)
 
-            for cap_set in all_captions.tolist():
+            for cap_set in sorted_all_captions.tolist():
                 caps = []
                 for caption in cap_set:
                     cap = [word_idx for word_idx in caption
