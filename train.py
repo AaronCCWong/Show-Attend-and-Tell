@@ -11,7 +11,7 @@ from torchvision import transforms
 from dataset import ImageCaptionDataset
 from decoder import Decoder
 from encoder import Encoder
-from utils import AverageMeter, accuracy
+from utils import AverageMeter, accuracy, calculate_caption_lengths
 
 
 data_transforms = transforms.Compose([
@@ -30,6 +30,8 @@ def main(args):
 
     encoder = Encoder()
     decoder = Decoder(vocabulary_size)
+
+    decoder.load_state_dict(torch.load('model/model_9.pth'))
 
     encoder.cuda()
     decoder.cuda()
@@ -66,35 +68,26 @@ def train(epoch, encoder, decoder, optimizer, cross_entropy_loss, data_loader, w
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-    for batch_idx, (imgs, captions, captions_length) in enumerate(data_loader):
+    for batch_idx, (imgs, captions) in enumerate(data_loader):
         imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
-        captions_length = captions_length.squeeze(-1).cuda()
         img_features = encoder(imgs)
         optimizer.zero_grad()
+        preds, alphas = decoder(img_features, captions)
+        targets = captions[:, 1:]
 
-        # need to sort to make pack_padded_sequence work
-        sorted_lengths, idxs = captions_length.sort(descending=True)
-        sorted_captions = captions[idxs]
-        sorted_features = img_features[idxs]
-        # plus 1 for <start>
-        sorted_lengths = [length + 1 for length in sorted_lengths]
-
-        preds, alphas = decoder(sorted_features, sorted_captions, sorted_lengths)
-        targets = sorted_captions[:, 1:]
-
-        targets = pack_padded_sequence(targets, sorted_lengths, batch_first=True)[0]
-        packed_preds = pack_padded_sequence(preds, sorted_lengths, batch_first=True)[0]
+        targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
+        preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
 
         att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
-        loss = cross_entropy_loss(packed_preds, targets)
+        loss = cross_entropy_loss(preds, targets)
         loss += att_regularization
         loss.backward()
         optimizer.step()
 
-        total_caption_length = sum(sorted_lengths).float()
-        acc1 = accuracy(packed_preds, targets, 1)
-        acc5 = accuracy(packed_preds, targets, 5)
+        total_caption_length = calculate_caption_lengths(word_dict, captions)
+        acc1 = accuracy(preds, targets, 1)
+        acc5 = accuracy(preds, targets, 5)
         losses.update(loss.item(), total_caption_length)
         top1.update(acc1, total_caption_length)
         top5.update(acc5, total_caption_length)
@@ -122,49 +115,39 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
     references = []
     hypotheses = []
     with torch.no_grad():
-        for batch_idx, (imgs, captions, all_captions, captions_length) in enumerate(data_loader):
+        for batch_idx, (imgs, captions, all_captions) in enumerate(data_loader):
             imgs, captions = Variable(imgs).cuda(), Variable(captions).cuda()
-            captions_length = captions_length.squeeze(-1).cuda()
             img_features = encoder(imgs)
+            preds, alphas = decoder(img_features, captions)
+            targets = captions[:, 1:]
 
-            # need to sort to make pack_padded_sequence work
-            sorted_lengths, idxs = captions_length.sort(descending=True)
-            sorted_captions = captions[idxs]
-            sorted_features = img_features[idxs]
-            sorted_all_captions = all_captions[idxs]
-            # plus 1 for <start>
-            sorted_lengths = [length + 1 for length in sorted_lengths]
-
-            preds, alphas = decoder(sorted_features, sorted_captions, sorted_lengths)
-            targets = sorted_captions[:, 1:]
-
-            targets = pack_padded_sequence(targets, sorted_lengths, batch_first=True)[0]
-            packed_preds = pack_padded_sequence(preds, sorted_lengths, batch_first=True)[0]
+            targets = pack_padded_sequence(targets, [len(tar) - 1 for tar in targets], batch_first=True)[0]
+            packed_preds = pack_padded_sequence(preds, [len(pred) - 1 for pred in preds], batch_first=True)[0]
 
             att_regularization = alpha_c * ((1 - alphas.sum(1))**2).mean()
 
             loss = cross_entropy_loss(packed_preds, targets)
             loss += att_regularization
 
-            total_caption_length = sum(sorted_lengths).float()
+            total_caption_length = calculate_caption_lengths(word_dict, captions)
             acc1 = accuracy(packed_preds, targets, 1)
             acc5 = accuracy(packed_preds, targets, 5)
             losses.update(loss.item(), total_caption_length)
             top1.update(acc1, total_caption_length)
             top5.update(acc5, total_caption_length)
 
-            for cap_set in sorted_all_captions.tolist():
+            for cap_set in all_captions.tolist():
                 caps = []
                 for caption in cap_set:
                     cap = [word_idx for word_idx in caption
-                           if word_idx != word_dict['<start>'] and word_idx != word_dict['<pad>']]
+                                    if word_idx != word_dict['<start>'] and word_idx != word_dict['<pad>']]
                     caps.append(cap)
                 references.append(caps)
 
             word_idxs = torch.max(preds, dim=2)[1]
             for idxs in word_idxs.tolist():
                 hypotheses.append([idx for idx in idxs
-                                   if idx != word_dict['<start>'] and idx != word_dict['<pad>']])
+                                       if idx != word_dict['<start>'] and idx != word_dict['<pad>']])
 
             if batch_idx % log_interval == 0:
                 print('Validation Batch: [{0}/{1}]\t'
@@ -178,8 +161,7 @@ def validate(epoch, encoder, decoder, cross_entropy_loss, data_loader, word_dict
 
         bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
         bleu_2 = corpus_bleu(references, hypotheses, weights=(0.5, 0.5, 0, 0))
-        bleu_3 = corpus_bleu(references, hypotheses,
-                             weights=(0.33, 0.33, 0.33, 0))
+        bleu_3 = corpus_bleu(references, hypotheses, weights=(0.33, 0.33, 0.33, 0))
         bleu_4 = corpus_bleu(references, hypotheses)
 
         writer.add_scalar('val_bleu1', bleu_1, epoch)

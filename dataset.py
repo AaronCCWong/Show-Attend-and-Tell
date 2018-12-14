@@ -1,7 +1,6 @@
 import json, os
 import torch
 from collections import Counter
-from functools import reduce
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -18,7 +17,8 @@ class ImageCaptionDataset(Dataset):
         self.split_type = split_type
         self.transform = transform
 
-        self.word_dict = json.load(open(data_path + '/word_dict.json', 'r'))
+        self.word_count = Counter()
+        self.caption_img_idx = {}
         self.img_paths = json.load(open(data_path + '/{}_img_paths.json'.format(split_type), 'r'))
         self.captions = json.load(open(data_path + '/{}_captions.json'.format(split_type), 'r'))
 
@@ -28,16 +28,12 @@ class ImageCaptionDataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        dont_count = (self.word_dict['<start>'], self.word_dict['<eos>'], self.word_dict['<pad>'])
-        caption_length = reduce((lambda x, y: x if y in dont_count else x + 1), self.captions[index], 0)
-
         if self.split_type == 'train':
-            return torch.FloatTensor(img), torch.tensor(self.captions[index]), torch.tensor([caption_length])
+            return torch.FloatTensor(img), torch.tensor(self.captions[index])
 
         matching_idxs = [idx for idx, path in enumerate(self.img_paths) if path == img_path]
         all_captions = [self.captions[idx] for idx in matching_idxs]
-        return torch.FloatTensor(img), torch.tensor(self.captions[index]), \
-            torch.tensor(all_captions), torch.tensor([caption_length])
+        return torch.FloatTensor(img), torch.tensor(self.captions[index]), torch.tensor(all_captions)
 
     def __len__(self):
         return len(self.captions)
