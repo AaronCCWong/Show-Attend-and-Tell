@@ -19,19 +19,12 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def accuracy(preds, targets, topk=(1,)):
-    with torch.no_grad():
-        maxk = max(topk)
-
-        res = []
-        batch_size = targets.size(0)
-        _, pred = preds.topk(maxk, 1, True, True)
-        correct = pred.eq(targets.view(-1, 1).expand_as(pred))
-
-        for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(100.0 / batch_size))
-        return res
+def accuracy(preds, targets, k):
+    batch_size = targets.size(0)
+    _, pred = preds.topk(k, 1, True, True)
+    correct = pred.eq(targets.view(-1, 1).expand_as(pred))
+    correct_total = correct.view(-1).float().sum()
+    return correct_total.item() * (100.0 / batch_size)
 
 
 def calculate_caption_lengths(word_dict, captions):
@@ -43,4 +36,3 @@ def calculate_caption_lengths(word_dict, captions):
             else:
                 lengths += 1
     return lengths
-
