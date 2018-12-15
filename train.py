@@ -31,8 +31,6 @@ def main(args):
     encoder = Encoder()
     decoder = Decoder(vocabulary_size)
 
-    decoder.load_state_dict(torch.load('model/model_9.pth'))
-
     encoder.cuda()
     decoder.cuda()
 
