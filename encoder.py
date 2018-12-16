@@ -1,15 +1,19 @@
 import torch.nn as nn
-from torchvision.models import vgg19
+from torchvision.models import resnet152, vgg19
 
 
 class Encoder(nn.Module):
-    def __init__(self):
+    def __init__(self, network='vgg19'):
         super(Encoder, self).__init__()
-        self.vgg = vgg19(pretrained=True)
-        self.vgg = nn.Sequential(*list(self.vgg.features.children())[:-1])
+        if network == 'resnet152':
+            self.net = resnet152(pretrained=True)
+            self.net = nn.Sequential(*list(self.net.children())[:-2])
+        else:
+            self.net = vgg19(pretrained=True)
+            self.net = nn.Sequential(*list(self.net.features.children())[:-1])
 
     def forward(self, x):
-        x = self.vgg(x)
+        x = self.net(x)
         x = x.permute(0, 2, 3, 1)
         x = x.view(x.size(0), -1, x.size(-1))
         return x

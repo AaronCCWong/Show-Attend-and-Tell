@@ -4,23 +4,24 @@ from attention import Attention
 
 
 class Decoder(nn.Module):
-    def __init__(self, vocabulary_size):
+    def __init__(self, vocabulary_size, encoder_dim):
         super(Decoder, self).__init__()
         self.vocabulary_size = vocabulary_size
+        self.encoder_dim = encoder_dim
 
-        self.init_h = nn.Linear(512, 512)
-        self.init_c = nn.Linear(512, 512)
+        self.init_h = nn.Linear(encoder_dim, 512)
+        self.init_c = nn.Linear(encoder_dim, 512)
         self.tanh = nn.Tanh()
 
-        self.f_beta = nn.Linear(512, 512)
+        self.f_beta = nn.Linear(512, encoder_dim)
         self.sigmoid = nn.Sigmoid()
 
         self.deep_output = nn.Linear(512, vocabulary_size)
         self.dropout = nn.Dropout()
 
-        self.attention = Attention()
+        self.attention = Attention(encoder_dim)
         self.embedding = nn.Embedding(vocabulary_size, 512)
-        self.lstm = nn.LSTMCell(1024, 512)
+        self.lstm = nn.LSTMCell(512 + encoder_dim, 512)
 
     def forward(self, img_features, captions):
         """

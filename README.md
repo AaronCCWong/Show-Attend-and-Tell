@@ -13,7 +13,7 @@
 - [x] Add BLEU evaluation
 - [ ] Update code to use GPU only when available
 - [ ] Add performance statistics
-- [ ] Allow encoder to use resnet-152 and densenet-161
+- [x] Allow encoder to use resnet-152
 
 ## References
 
