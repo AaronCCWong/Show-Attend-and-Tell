@@ -10,4 +10,4 @@
 module purge
 module load cudnn/9.0v7.3.0.29
 
-python train.py --epochs 10
+python train.py --epochs 10 --network resnet152
