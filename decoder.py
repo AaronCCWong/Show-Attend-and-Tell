@@ -34,7 +34,8 @@ class Decoder(nn.Module):
         max_timespan = max([len(caption) for caption in captions]) - 1
 
         prev_words = torch.zeros(batch_size, 1).long().cuda()
-        embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
+        # embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
+        embedding = self.embedding(prev_words)
 
         preds = torch.zeros(batch_size, max_timespan, self.vocabulary_size).cuda()
         alphas = torch.zeros(batch_size, max_timespan, img_features.size(1)).cuda()
@@ -43,11 +44,13 @@ class Decoder(nn.Module):
             gate = self.sigmoid(self.f_beta(h))
             gated_context = gate * context
 
-            if self.training:
-                lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
-            else:
-                embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
-                lstm_input = torch.cat((embedding, gated_context), dim=1)
+            # if self.training:
+            #     lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
+            # else:
+            #     embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
+            #     lstm_input = torch.cat((embedding, gated_context), dim=1)
+            embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
+            lstm_input = torch.cat((embedding, gated_context), dim=1)
 
             h, c = self.lstm(lstm_input, (h, c))
             output = self.deep_output(self.dropout(h))
@@ -55,8 +58,8 @@ class Decoder(nn.Module):
             preds[:, t] = output
             alphas[:, t] = alpha
 
-            if not self.training:
-                embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
+            # if not self.training:
+            embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
         return preds, alphas
 
     def get_init_lstm_state(self, img_features):
@@ -105,8 +108,7 @@ class Decoder(nn.Module):
             sentences = torch.cat((sentences[prev_word_idxs], next_word_idxs.unsqueeze(1)), dim=1)
             alphas = torch.cat((alphas[prev_word_idxs], alpha[prev_word_idxs].unsqueeze(1)), dim=1)
 
-            incomplete = [idx for idx, next_word in enumerate(
-                next_word_idxs) if next_word != 1]
+            incomplete = [idx for idx, next_word in enumerate(next_word_idxs) if next_word != 1]
             complete = list(set(range(len(next_word_idxs))) - set(incomplete))
 
             if len(complete) > 0:
