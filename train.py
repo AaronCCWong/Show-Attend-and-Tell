@@ -38,6 +38,9 @@ def main(args):
 
     decoder = Decoder(vocabulary_size, encoder_dim)
 
+    if args.model:
+        decoder.load_state_dict(torch.load(args.model))
+
     encoder.cuda()
     decoder.cuda()
 
@@ -198,5 +201,6 @@ if __name__ == "__main__":
                         help='path to data images (default: data/coco)')
     parser.add_argument('--network', choices=['vgg19', 'resnet152'], default='vgg19',
                         help='Network to use in the encoder (default: vgg19)')
+    parser.add_argument('--model', type=str, help='path to model')
 
     main(parser.parse_args())
