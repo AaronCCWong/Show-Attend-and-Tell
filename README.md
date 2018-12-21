@@ -9,6 +9,17 @@ For a trained model to load into the decoder, use
 - [ResNet152 No Teacher Forcing](https://www.dropbox.com/s/wq0g2oo6eautv2s/model_nt_resnet152_10.pth?dl=0)
 - [VGG19 No Gating Scalar](https://www.dropbox.com/s/li4390nmqihv4rz/model_no_b_vgg19_5.pth?dl=0)
 
+### Some training statistics
+
+BLEU scores for VGG19 (Orange) and ResNet152 (Red) Trained With Teacher Forcing
+
+| BLEU Score | Graph                        | Top-K Accuracy   | Graph                              |
+|------------|------------------------------|------------------|------------------------------------|
+| BLEU-1     | ![BLEU-1](/assets/bleu1.png) | Training Top-1   | ![Train TOP-1](/assets/top1.png)   |
+| BLEU-2     | ![BLEU-2](/assets/bleu2.png) | Training Top-5   | ![Train TOP-5](/assets/top5.png)   |
+| BLEU-3     | ![BLEU-3](/assets/bleu3.png) | Validation Top-1 | ![Val TOP-1](/assets/val_top1.png) |
+| BLEU-4     | ![BLEU-4](/assets/bleu4.png) | Validation Top-5 | ![Val TOP-5](/assets/val_top5.png) |
+
 ## To Train
 
 This was written in python3 so may not work for python2. Download the COOC dataset training and validation
