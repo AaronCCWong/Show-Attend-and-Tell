@@ -10,5 +10,4 @@
 module purge
 module load cudnn/9.0v7.3.0.29
 
-python train.py --epochs 5 --network resnet152 --model model/model_nt_resnet152_10.pth
-
+python train.py --epochs 5

@@ -42,8 +42,8 @@ class Decoder(nn.Module):
         for t in range(max_timespan):
             context, alpha = self.attention(img_features, h)
             gate = self.sigmoid(self.f_beta(h))
-            gated_context = gate * context
-
+            # gated_context = gate * context
+            gated_context = context
             # if self.training:
             #     lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
             # else:

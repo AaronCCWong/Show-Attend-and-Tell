@@ -63,7 +63,7 @@ def main(args):
               train_loader, word_dict, args.alpha_c, args.log_interval, writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
                  word_dict, args.alpha_c, args.log_interval, writer)
-        model_file = 'model/model_' + args.network + '_' + str(epoch) + '.pth'
+        model_file = 'model/model_no_b_' + args.network + '_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
     writer.close()
