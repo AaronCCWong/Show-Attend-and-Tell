@@ -29,16 +29,7 @@ def main(args):
     vocabulary_size = len(word_dict)
 
     encoder = Encoder(args.network)
-
-    # is there a way to get the output dimension from the encoder?
-    if args.network == 'vgg19':
-        encoder_dim = 512
-    elif args.network == 'resnet152':
-        encoder_dim = 2048
-    elif args.network == 'densenet201':
-        encoder_dim = 1920
-
-    decoder = Decoder(vocabulary_size, encoder_dim)
+    decoder = Decoder(vocabulary_size, encoder.dim)
 
     if args.model:
         decoder.load_state_dict(torch.load(args.model))
@@ -204,5 +195,7 @@ if __name__ == "__main__":
     parser.add_argument('--network', choices=['vgg19', 'resnet152', 'densenet201'], default='vgg19',
                         help='Network to use in the encoder (default: vgg19)')
     parser.add_argument('--model', type=str, help='path to model')
+    parser.add_argument('--tf', action='store_true', default=False,
+                        help='Use teacher forcing when training LSTM (default: False)')
 
     main(parser.parse_args())

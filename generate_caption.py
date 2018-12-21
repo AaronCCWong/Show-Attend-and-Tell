@@ -92,15 +92,7 @@ if __name__ == "__main__":
     vocabulary_size = len(word_dict)
 
     encoder = Encoder()
-
-    if args.network == 'vgg19':
-        encoder_dim = 512
-    elif args.network == 'resnet152':
-        encoder_dim = 2048
-    elif args.network == 'densenet201':
-        encoder_dim = 1920
-
-    decoder = Decoder(vocabulary_size, encoder_dim)
+    decoder = Decoder(vocabulary_size, encoder.dim)
 
     decoder.load_state_dict(torch.load(args.model))
 

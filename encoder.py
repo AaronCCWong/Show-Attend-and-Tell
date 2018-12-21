@@ -8,12 +8,15 @@ class Encoder(nn.Module):
         if network == 'resnet152':
             self.net = resnet152(pretrained=True)
             self.net = nn.Sequential(*list(self.net.children())[:-2])
+            self.dim = 2048
         elif network == 'densenet201':
             self.net = densenet201(pretrained=True)
             self.net = nn.Sequential(*list(list(self.net.children())[0])[:-1])
+            self.dim = 1920
         else:
             self.net = vgg19(pretrained=True)
             self.net = nn.Sequential(*list(self.net.features.children())[:-1])
+            self.dim = 512
 
     def forward(self, x):
         x = self.net(x)

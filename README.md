@@ -11,7 +11,7 @@ For a trained model to load into the decoder, use
 
 ### Some training statistics
 
-BLEU scores for VGG19 (Orange) and ResNet152 (Red) Trained With Teacher Forcing
+BLEU scores for VGG19 (Orange) and ResNet152 (Red) Trained With Teacher Forcing.
 
 | BLEU Score | Graph                        | Top-K Accuracy   | Graph                              |
 |------------|------------------------------|------------------|------------------------------------|
@@ -62,7 +62,7 @@ python generate_caption.py --img-path <PATH_TO_IMG> --model <PATH_TO_MODEL_PARAM
 - [x] Write validation function
 - [x] Add BLEU evaluation
 - [ ] Update code to use GPU only when available, otherwise use CPU
-- [ ] Add performance statistics
+- [x] Add performance statistics
 - [x] Allow encoder to use resnet-152 and densenet-201
 
 ## References
