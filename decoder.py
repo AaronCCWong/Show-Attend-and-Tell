@@ -4,8 +4,10 @@ from attention import Attention
 
 
 class Decoder(nn.Module):
-    def __init__(self, vocabulary_size, encoder_dim):
+    def __init__(self, vocabulary_size, encoder_dim, tf=False):
         super(Decoder, self).__init__()
+        self.use_tf = tf
+
         self.vocabulary_size = vocabulary_size
         self.encoder_dim = encoder_dim
 
@@ -38,8 +40,10 @@ class Decoder(nn.Module):
         max_timespan = max([len(caption) for caption in captions]) - 1
 
         prev_words = torch.zeros(batch_size, 1).long().cuda()
-        # embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
-        embedding = self.embedding(prev_words)
+        if self.use_tf:
+            embedding = self.embedding(captions) if self.training else self.embedding(prev_words)
+        else:
+            embedding = self.embedding(prev_words)
 
         preds = torch.zeros(batch_size, max_timespan, self.vocabulary_size).cuda()
         alphas = torch.zeros(batch_size, max_timespan, img_features.size(1)).cuda()
@@ -48,13 +52,11 @@ class Decoder(nn.Module):
             gate = self.sigmoid(self.f_beta(h))
             gated_context = gate * context
 
-            # if self.training:
-            #     lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
-            # else:
-            #     embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
-            #     lstm_input = torch.cat((embedding, gated_context), dim=1)
-            embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
-            lstm_input = torch.cat((embedding, gated_context), dim=1)
+            if self.use_tf and self.training:
+                lstm_input = torch.cat((embedding[:, t], gated_context), dim=1)
+            else:
+                embedding = embedding.squeeze(1) if embedding.dim() == 3 else embedding
+                lstm_input = torch.cat((embedding, gated_context), dim=1)
 
             h, c = self.lstm(lstm_input, (h, c))
             output = self.deep_output(self.dropout(h))
@@ -62,8 +64,8 @@ class Decoder(nn.Module):
             preds[:, t] = output
             alphas[:, t] = alpha
 
-            # if not self.training:
-            embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
+            if not self.training or not self.use_tf:
+                embedding = self.embedding(output.max(1)[1].reshape(batch_size, 1))
         return preds, alphas
 
     def get_init_lstm_state(self, img_features):

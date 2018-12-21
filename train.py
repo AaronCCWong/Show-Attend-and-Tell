@@ -29,7 +29,7 @@ def main(args):
     vocabulary_size = len(word_dict)
 
     encoder = Encoder(args.network)
-    decoder = Decoder(vocabulary_size, encoder.dim)
+    decoder = Decoder(vocabulary_size, encoder.dim, args.tf)
 
     if args.model:
         decoder.load_state_dict(torch.load(args.model))
