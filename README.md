@@ -11,9 +11,9 @@
 - [x] Write training function
 - [x] Write validation function
 - [x] Add BLEU evaluation
-- [ ] Update code to use GPU only when available
+- [ ] Update code to use GPU only when available, otherwise use CPU
 - [ ] Add performance statistics
-- [x] Allow encoder to use resnet-152
+- [x] Allow encoder to use resnet-152 and densenet-201
 
 ## References
 

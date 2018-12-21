@@ -9,7 +9,7 @@ PyTorch from here:
 https://github.com/kelvinxu/arctic-captions/blob/master/alpha_visualization.ipynb
 """
 
-import argparse, json
+import argparse, json, os
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,6 +17,7 @@ import skimage
 import skimage.transform
 import torch
 import torchvision.transforms as transforms
+from math import ceil
 from PIL import Image
 
 from dataset import pil_loader
@@ -36,7 +37,11 @@ def generate_caption_visualization(encoder, decoder, img_path, word_dict, beam_s
     sentence, alpha = decoder.caption(img_features, beam_size)
 
     token_dict = {idx: word for word, idx in word_dict.items()}
-    sentence_tokens = [token_dict[word_idx] for word_idx in sentence]
+    sentence_tokens = []
+    for word_idx in sentence:
+        sentence_tokens.append(token_dict[word_idx])
+        if word_idx == word_dict['<eos>']:
+            break
 
     img = Image.open(img_path)
     w, h = img.size
@@ -55,10 +60,14 @@ def generate_caption_visualization(encoder, decoder, img_path, word_dict, beam_s
     num_words = len(sentence_tokens)
     w = np.round(np.sqrt(num_words))
     h = np.ceil(np.float32(num_words) / w)
-
     alpha = torch.tensor(alpha)
+
+    plot_height = ceil((num_words + 3) / 4.0)
+    ax1 = plt.subplot(4, plot_height, 1)
+    plt.imshow(img)
+    plt.axis('off')
     for idx in range(num_words):
-        plt.subplot(w, h, idx + 2)
+        ax2 = plt.subplot(4, plot_height, idx + 2)
         label = sentence_tokens[idx]
         plt.text(0, 1, label, backgroundcolor='white', fontsize=13)
         plt.text(0, 1, label, color='black', fontsize=13)
@@ -76,6 +85,8 @@ def generate_caption_visualization(encoder, decoder, img_path, word_dict, beam_s
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Show, Attend and Tell Caption Generator')
     parser.add_argument('--img-path', type=str, help='path to image')
+    parser.add_argument('--network', choices=['vgg19', 'resnet152'], default='vgg19',
+                        help='Network to use in the encoder (default: vgg19)')
     parser.add_argument('--model', type=str, help='path to model paramters')
     parser.add_argument('--data-path', type=str, default='data/coco',
                         help='path to data (default: data/coco)')
@@ -85,7 +96,13 @@ if __name__ == "__main__":
     vocabulary_size = len(word_dict)
 
     encoder = Encoder()
-    decoder = Decoder(vocabulary_size)
+
+    if args.network == 'vgg19':
+        encoder_dim = 512
+    elif args.network == 'resnet152':
+        encoder_dim = 2048
+
+    decoder = Decoder(vocabulary_size, encoder_dim)
 
     decoder.load_state_dict(torch.load(args.model))
 

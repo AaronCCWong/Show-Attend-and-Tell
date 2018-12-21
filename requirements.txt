@@ -1,3 +1,5 @@
+nltk
+numpy
 torch
 torchvision
 tensorboardX

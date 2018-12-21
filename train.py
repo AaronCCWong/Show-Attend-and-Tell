@@ -35,6 +35,8 @@ def main(args):
         encoder_dim = 512
     elif args.network == 'resnet152':
         encoder_dim = 2048
+    elif args.network == 'densenet201':
+        encoder_dim = 1920
 
     decoder = Decoder(vocabulary_size, encoder_dim)
 
@@ -63,7 +65,7 @@ def main(args):
               train_loader, word_dict, args.alpha_c, args.log_interval, writer)
         validate(epoch, encoder, decoder, cross_entropy_loss, val_loader,
                  word_dict, args.alpha_c, args.log_interval, writer)
-        model_file = 'model/model_no_b_' + args.network + '_' + str(epoch) + '.pth'
+        model_file = 'model/model_' + args.network + '_' + str(epoch) + '.pth'
         torch.save(decoder.state_dict(), model_file)
         print('Saved model to ' + model_file)
     writer.close()
@@ -199,7 +201,7 @@ if __name__ == "__main__":
                         help='number of batches to wait before logging training stats (default: 100)')
     parser.add_argument('--data', type=str, default='data/coco',
                         help='path to data images (default: data/coco)')
-    parser.add_argument('--network', choices=['vgg19', 'resnet152'], default='vgg19',
+    parser.add_argument('--network', choices=['vgg19', 'resnet152', 'densenet201'], default='vgg19',
                         help='Network to use in the encoder (default: vgg19)')
     parser.add_argument('--model', type=str, help='path to model')
 
