@@ -101,6 +101,8 @@ if __name__ == "__main__":
         encoder_dim = 512
     elif args.network == 'resnet152':
         encoder_dim = 2048
+    elif args.network == 'densenet201':
+        encoder_dim = 1920
 
     decoder = Decoder(vocabulary_size, encoder_dim)
 
