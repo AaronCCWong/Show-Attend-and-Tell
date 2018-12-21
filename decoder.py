@@ -27,12 +27,9 @@ class Decoder(nn.Module):
 
     def forward(self, img_features, captions):
         """
-        We use teacher forcing during training. For reference, refer to
+        We can use teacher forcing during training. For reference, refer to
         https://www.deeplearningbook.org/contents/rnn.html
 
-        Note that the code as it currently is does not use teacher forcing. The teacher forcing
-        bits have been commented out. Will need to make this more dynamic in the future so that
-        the user can choose whether to use teacher forcing or not.
         """
         batch_size = img_features.size(0)
 
