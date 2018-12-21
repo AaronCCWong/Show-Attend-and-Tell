@@ -78,6 +78,11 @@ class Decoder(nn.Module):
         return h, c
 
     def caption(self, img_features, beam_size):
+        """
+        We use beam search to construct the best sentences following a
+        similar implementation as the author in
+        https://github.com/kelvinxu/arctic-captions/blob/master/generate_caps.py
+        """
         prev_words = torch.zeros(beam_size, 1).long()
 
         sentences = prev_words

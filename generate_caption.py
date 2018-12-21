@@ -1,9 +1,5 @@
 """
-We use beam search to construct the best sentences following a
-similar implementation as the author in
-https://github.com/kelvinxu/arctic-captions/blob/master/generate_caps.py
-
-We also use the same strategy as the author to display visualizations
+We use the same strategy as the author to display visualizations
 as in the examples shown in the paper. The strategy used is adapted for
 PyTorch from here:
 https://github.com/kelvinxu/arctic-captions/blob/master/alpha_visualization.ipynb
