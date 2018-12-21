@@ -2,6 +2,38 @@
 
 ## A PyTorch implementation
 
+## To Train
+
+This was written in python3 so may not work for python2. Download the COOC dataset training and validation
+images. Put them in `data/coco/imgs/train2014` and `data/coco/imgs/val2014` respectively.
+
+Run the preprocessing to create the needed JSON files:
+
+```python3
+python generate_json_data.py
+```
+
+Start the training by running:
+
+```python3
+python train.py
+```
+
+The models will be saved in `model/` and the training statistics will be saved in `runs/`. To see the
+training statistics, use:
+
+```python3
+tensorboard --logdir runs
+```
+
+## To Generate Captions
+
+```python3
+python generate_caption.py --img-path <PATH_TO_IMG> --model <PATH_TO_MODEL_PARAMETERS>
+```
+
+## Todo
+
 - [x] Create image encoder class
 - [x] Create decoder class
 - [x] Create dataset loader
