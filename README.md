@@ -22,7 +22,7 @@ BLEU scores for VGG19 (Orange) and ResNet152 (Red) Trained With Teacher Forcing.
 
 ## To Train
 
-This was written in python3 so may not work for python2. Download the COOC dataset training and validation
+This was written in python3 so may not work for python2. Download the COCO dataset training and validation
 images. Put them in `data/coco/imgs/train2014` and `data/coco/imgs/val2014` respectively.
 
 Run the preprocessing to create the needed JSON files:
