@@ -27,26 +27,26 @@ images. Put them in `data/coco/imgs/train2014` and `data/coco/imgs/val2014` resp
 
 Run the preprocessing to create the needed JSON files:
 
-```python3
+```bash
 python generate_json_data.py
 ```
 
 Start the training by running:
 
-```python3
+```bash
 python train.py
 ```
 
 The models will be saved in `model/` and the training statistics will be saved in `runs/`. To see the
 training statistics, use:
 
-```python3
+```bash
 tensorboard --logdir runs
 ```
 
 ## To Generate Captions
 
-```python3
+```bash
 python generate_caption.py --img-path <PATH_TO_IMG> --model <PATH_TO_MODEL_PARAMETERS>
 ```
 
