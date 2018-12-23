@@ -22,31 +22,33 @@ BLEU scores for VGG19 (Orange) and ResNet152 (Red) Trained With Teacher Forcing.
 
 ## To Train
 
-This was written in python3 so may not work for python2. Download the COOC dataset training and validation
-images. Put them in `data/coco/imgs/train2014` and `data/coco/imgs/val2014` respectively.
+This was written in python3 so may not work for python2. Download the COCO dataset training and validation
+images. Put them in `data/coco/imgs/train2014` and `data/coco/imgs/val2014` respectively. Put the COCO
+dataset split JSON file from [Deep Visual-Semantic Alignments](https://cs.stanford.edu/people/karpathy/deepimagesent/)
+in `data/coco/`. It should be named `dataset.json`.
 
 Run the preprocessing to create the needed JSON files:
 
-```python3
+```bash
 python generate_json_data.py
 ```
 
 Start the training by running:
 
-```python3
+```bash
 python train.py
 ```
 
 The models will be saved in `model/` and the training statistics will be saved in `runs/`. To see the
 training statistics, use:
 
-```python3
+```bash
 tensorboard --logdir runs
 ```
 
 ## To Generate Captions
 
-```python3
+```bash
 python generate_caption.py --img-path <PATH_TO_IMG> --model <PATH_TO_MODEL_PARAMETERS>
 ```
 
