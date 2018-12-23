@@ -63,7 +63,7 @@ python generate_caption.py --img-path <PATH_TO_IMG> --model <PATH_TO_MODEL_PARAM
 - [x] Add BLEU evaluation
 - [ ] Update code to use GPU only when available, otherwise use CPU
 - [x] Add performance statistics
-- [x] Allow encoder to use resnet-152 and densenet-201
+- [x] Allow encoder to use resnet-152 and densenet-161
 
 ## References
 

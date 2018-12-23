@@ -1,5 +1,5 @@
 import torch.nn as nn
-from torchvision.models import densenet201, resnet152, vgg19
+from torchvision.models import densenet161, resnet152, vgg19
 
 
 class Encoder(nn.Module):
@@ -9,8 +9,8 @@ class Encoder(nn.Module):
             self.net = resnet152(pretrained=True)
             self.net = nn.Sequential(*list(self.net.children())[:-2])
             self.dim = 2048
-        elif network == 'densenet201':
-            self.net = densenet201(pretrained=True)
+        elif network == 'densenet161':
+            self.net = densenet161(pretrained=True)
             self.net = nn.Sequential(*list(list(self.net.children())[0])[:-1])
             self.dim = 1920
         else:
