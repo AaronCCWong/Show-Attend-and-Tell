@@ -68,10 +68,16 @@ def generate_caption_visualization(encoder, decoder, img_path, word_dict, beam_s
         plt.text(0, 1, label, backgroundcolor='white', fontsize=13)
         plt.text(0, 1, label, color='black', fontsize=13)
         plt.imshow(img)
-        if smooth:
-            alpha_img = skimage.transform.pyramid_expand(alpha[idx, :].reshape(14, 14), upscale=16, sigma=20)
+
+        if encoder.network == 'vgg19':
+            shape_size = 14
         else:
-            alpha_img = skimage.transform.resize(alpha[idx, :].reshape(14,14), [img.shape[0], img.shape[1]])
+            shape_size = 7
+
+        if smooth:
+            alpha_img = skimage.transform.pyramid_expand(alpha[idx, :].reshape(shape_size, shape_size), upscale=16, sigma=20)
+        else:
+            alpha_img = skimage.transform.resize(alpha[idx, :].reshape(shape_size,shape_size), [img.shape[0], img.shape[1]])
         plt.imshow(alpha_img, alpha=0.8)
         plt.set_cmap(cm.Greys_r)
         plt.axis('off')
@@ -91,7 +97,7 @@ if __name__ == "__main__":
     word_dict = json.load(open(args.data_path + '/word_dict.json', 'r'))
     vocabulary_size = len(word_dict)
 
-    encoder = Encoder()
+    encoder = Encoder(network=args.network)
     decoder = Decoder(vocabulary_size, encoder.dim)
 
     decoder.load_state_dict(torch.load(args.model))

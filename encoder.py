@@ -5,6 +5,7 @@ from torchvision.models import densenet161, resnet152, vgg19
 class Encoder(nn.Module):
     def __init__(self, network='vgg19'):
         super(Encoder, self).__init__()
+        self.network = network
         if network == 'resnet152':
             self.net = resnet152(pretrained=True)
             self.net = nn.Sequential(*list(self.net.children())[:-2])
