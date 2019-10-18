@@ -67,6 +67,20 @@ python generate_caption.py --img-path <PATH_TO_IMG> --model <PATH_TO_MODEL_PARAM
 - [x] Add performance statistics
 - [x] Allow encoder to use resnet-152 and densenet-161
 
+## Captioned Examples
+
+### Correctly Captioned Images
+
+![Correctly Captioned Image 1](/assets/tennis.png)
+
+![Correctly Captioned Image 2](/assets/right_cap.png)
+
+### Incorrectly Captioned Images
+
+![Incorrectly Captioned Image 1](/assets/bad_cap.png)
+
+![Incorrectly Captioned Image 2](/assets/wrong_cap.png)
+
 ## References
 
 [Show, Attend and Tell](https://arxiv.org/pdf/1502.03044.pdf)
